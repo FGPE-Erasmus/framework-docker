@@ -1,0 +1,138 @@
+version: '3.7'
+
+services:
+
+  # GATEWAY
+  gateway: 
+    image: nginx:stable-alpine
+    ports:
+      - 8080:80
+      - 8443:443
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - fgpe-nw
+    command: 'nginx -g "daemon off;"'
+
+  # AUTHENTICATION / AUTHORIZATION
+  keycloak:
+    image: fgpe/keycloak:latest
+    env_file: ./keycloak/.env
+    restart: unless-stopped
+    volumes:
+      - ./keycloak/fgpe-realm.json:/tmp/fgpe-realm.json
+    depends_on:
+      - keycloak-postgres
+    networks:
+      - fgpe-nw
+
+  keycloak-postgres:
+    image: postgres:11-alpine
+    env_file: ./keycloak/postgres/.env
+    restart: unless-stopped
+    volumes:
+      - ./data/keycloak/postgres:/var/lib/postgresql/data
+    networks:
+      - fgpe-nw
+
+  # MAILING
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+    ports:
+      - 8025:8025
+    networks:
+      - fgpe-nw
+
+  # AUTHORKIT
+  authorkit-api:
+    image: fgpe/authorkit-api:latest
+    env_file: ./authorkit/.env
+    restart: unless-stopped
+    depends_on:
+      - authorkit-postgres
+      - authorkit-redis
+    networks:
+      - fgpe-nw
+
+  authorkit-postgres:
+    image: postgres:11-alpine
+    env_file: ./authorkit/postgres/.env
+    restart: unless-stopped
+    volumes:
+      - ./data/authorkit/postgres:/var/lib/postgresql/data
+    networks:
+      - fgpe-nw
+
+  authorkit-redis:
+    image: redis:latest
+    env_file: ./authorkit/redis/.env
+    restart: unless-stopped
+    volumes:
+      - ./authorkit/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./data/authorkit/redis/data:/data
+    networks:
+      - fgpe-nw
+
+  authorkit-ui:
+    image: fgpe/authorkit-ui:latest
+    restart: unless-stopped
+    volumes:
+      - ./authorkit/ui/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - fgpe-nw
+
+  # GAMIFICATION SERVICE
+  gamification-service:
+    image: fgpe/gamification-service:latest
+    env_file: ./gamification-service/.env
+    restart: unless-stopped
+    depends_on:
+      - gamification-service-mongodb
+      - gamification-service-redis
+      - evaluation-engine
+    networks: 
+      - fgpe-nw
+
+  gamification-service-mongodb:
+    image: mongo:latest
+    env_file: ./gamification-service/mongodb/.env
+    restart: unless-stopped
+    volumes:
+      - ./data/gamification-service/mongodb/data:/data/db
+    networks:
+      - fgpe-nw
+
+  gamification-service-redis:
+    image: redis:latest
+    env_file: ./gamification-service/redis/.env
+    restart: unless-stopped
+    volumes:
+      - ./gamification-service/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./data/gamification-service/redis/data:/data
+    networks:
+      - fgpe-nw
+
+  # EVALUATION ENGINE SERVICE
+  evaluation-engine:
+    image: jcpaiva/mooshak-fgpe
+    restart: unless-stopped
+    volumes:
+      - mooshak-data:/home/mooshak/data
+    networks:
+      - fgpe-nw
+
+  # PROGRAMMING LEARNING PLATFORM
+  learning-platform:
+    image: fgpe/learning-platform
+    restart: unless-stopped
+    volumes:
+      - ./learning-platform/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - fgpe-nw
+
+volumes:
+  mooshak-data:
+
+networks:
+  fgpe-nw:

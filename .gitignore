@@ -1,0 +1,4 @@
+# editor data
+.vscode/
+.idea/
+*.iml
