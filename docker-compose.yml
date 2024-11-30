@@ -31,10 +31,6 @@ services:
     image: mongo:latest
     env_file: ./moodle/.env
     restart: unless-stopped
-    environment:
-      MONGO_INITDB_DATABASE: ${LTI_TOOL_DB_NAME}
-      MONGO_INITDB_ROOT_USERNAME: ${LTI_TOOL_DB_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${LTI_TOOL_DB_PASSWORD}
     volumes:
       - lti-data:/data/db
     depends_on:
@@ -47,18 +43,10 @@ services:
     env_file: ./moodle/.env
     restart: unless-stopped
     environment:
-      SITE_URL: ${MOODLE_URL}
-      MOODLE_SITE_NAME: ${MOODLE_SITE_NAME}
-      MOODLE_EMAIL: ${MOODLE_EMAIL}
-      MOODLE_USERNAME: ${MOODLE_USERNAME}
-      MOODLE_PASSWORD: ${MOODLE_PASSWORD}
       REVERSEPROXY: "true"
       DB_TYPE: pgsql
       DB_HOST: moodle-db
       DB_PORT: 5432
-      DB_NAME: ${MOODLE_DB_NAME}
-      DB_USER: ${MOODLE_DB_USER}
-      DB_PASS: ${MOODLE_DB_PASSWORD}
       ALLOW_EMPTY_PASSWORD: "no"
     ports:
       - '8180:8080'
@@ -74,10 +62,6 @@ services:
     image: postgres:alpine
     env_file: ./moodle/.env
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${MOODLE_DB_NAME}
-      POSTGRES_USER: ${MOODLE_DB_USER}
-      POSTGRES_PASSWORD: ${MOODLE_DB_PASSWORD}
     volumes:
       - ./data/moodle/db:/var/lib/postgresql/data
     networks:
